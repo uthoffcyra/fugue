@@ -34,8 +34,7 @@ p {
 }
 
 .dXWpFa_terminalView > div {
-    outline: solid 4px #1d7874;
-    border-radius: 8px;
+    outline: solid 2px #1d7874;
 }
 .dXWpFa_terminalBar {
     background-color: #679289 !important;
