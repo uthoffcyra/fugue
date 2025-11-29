@@ -22,7 +22,18 @@ p {
     margin-bottom: 20px;
 }
 
-.emu-display {
+#loading-emulator {
+    & div {
+        color: #ff9393;
+        font-size: 32px;
+        font-weight: bold;
+        text-align: center;
+        padding: 64px 0;
+    }
+    margin-bottom: 20px;
+}
+
+#emu-display {
     display: flex;
     justify-content: center;
     align-items: center;
