@@ -25,8 +25,8 @@ function stmt_list(stream)
     return {'STMT_LIST', lst}
 end
 
--- stmt : {VAR_DECL} VAR_DECL NAME ASSIGN exp (SEMI)?
---      | {FN_DECL} FN_DECL NAME decl_args stmt (SEMI)?
+-- stmt : {VAR_DECL} VAR_DECL NAME (ASSIGN exp)? (SEMI)?
+--      | {FN_DECL} FN_DECL NAME decl_args (stmt)? (SEMI)?
 --      | {FN_RETURN} FN_RETURN ({<see exp lookahead>} exp)? (SEMI)?
 --      | {NAME} NAME name_suffix (SEMI)?
 --      | {LCURLY} LCURLY stmt_list RCURLY (SEMI)?
@@ -40,8 +40,11 @@ function stmt(stream)
     if lib.tcontains({'VAR_DECL'}, token.type) then
         stream:match('VAR_DECL')
         local n = name(stream)
-        stream:match('ASSIGN')
-        local val = exp(stream)
+        local val = {'NONE'}
+        if lib.tcontains({'ASSIGN'}, stream:pointer().type) then
+            stream:match('ASSIGN')
+            val = exp(stream)
+        end
         stream:optional('SEMI')
         return {'VAR_DECL', n, val}
     
@@ -50,7 +53,10 @@ function stmt(stream)
         stream:match('FN_DECL')
         local n = name(stream)
         local ard = decl_args(stream)
-        local fb = stmt(stream)
+        local fb = {'STMT_LIST', {}}
+        if lib.tcontains(stmt_lookahead, stream:pointer().type) then
+            fb = stmt(stream)
+        end
         stream:optional('SEMI')
         return {'FN_DECL', n, ard, fb}
 
@@ -108,7 +114,7 @@ end
 -- decl_args : {LPAREN} LPAREN ({NAME} NAME ({COMMA} COMMA NAME)* )? RPAREN
 function decl_args(stream)
     stream:match('LPAREN')
-    local argd = {'NONE'}
+    local argd = {}
     if lib.tcontains({'NAME'}, stream:pointer().type) then
         local n = name(stream)
         argd = {n}
@@ -125,18 +131,18 @@ end
 -- call_args : LPAREN (exp (COMMA exp)* )? RPAREN
 function call_args(stream)
     stream:match('LPAREN')
-    local cl = {'NONE'}
+    local argc = {}
     if lib.tcontains(exp_lookahead, stream:pointer().type) then
         local e = exp(stream)
-        cl = {e}
+        argc = {e}
         while lib.tcontains({'COMMA'}, stream:pointer().type) do
             stream:match('COMMA')
             e = exp(stream)
-            table.insert(cl, n)
+            table.insert(argc, e)
         end
     end
     stream:match('RPAREN')
-    return {'CALL_ARGS', cl}
+    return {'CALL_ARGS', argc}
 end
 
 -- name_suffix : {ASSIGN} ASSIGN exp
@@ -207,6 +213,7 @@ end
 -- exp_high : primary (({MUL,DIV} MUL|DIV) primary)*
 -- primary  : {INTEGER} INTEGER
 --          | {TRUE,FALSE} boolean
+--          | {NONE} NONE
 --          | {STRING} STRING
 --          | {NAME} NAME ({LPAREN} call_args)?
 --          | {SPECIAL} special_name
@@ -214,7 +221,7 @@ end
 --          | {NOT} NOT exp
 exp_lookahead = {'EQU', 'LEQ', 'NEQ', 'GEQ', 'PLUS', 'MINUS', 'CONCAT',
     'MUL', 'DIV', 'INTEGER', 'STRING', 'NAME', 'SPECIAL', 'LPAREN',
-    'NOT', 'TRUE', 'FALSE'}
+    'NOT', 'TRUE', 'FALSE', 'NONE'}
 function exp(stream)
     if lib.tcontains(exp_lookahead, stream:pointer().type) then
         return exp_low(stream)
@@ -269,6 +276,11 @@ function primary(stream)
         local tk = stream:match('INTEGER')
         return {'CONST', tonumber(tk.value)}
 
+    -- Non-value
+    elseif lib.tcontains({'NONE'}, token.type) then
+        stream:match('NONE')
+        return {'NONE'}
+        
     -- Boolean Value
     elseif lib.tcontains({'TRUE','FALSE'}, token.type) then
         return boolean(stream)
@@ -276,7 +288,7 @@ function primary(stream)
     -- String
     elseif lib.tcontains({'STRING'}, token.type) then
         local tk = stream:match('STRING')
-        return {'CONST', tostring(tk.value)}
+        return {'CONST', tostring(tk.value:sub(2, -2))}
 
     -- Variable / Function
     elseif lib.tcontains({'NAME'}, token.type) then
@@ -319,17 +331,17 @@ function name(stream)
 end
 function special(stream)
     stream:match('SPECIAL')
-    local n = name(stream)
-    return {'SPECIAL', n}
+    local ntk = stream:match('NAME')
+    return {'SPECIAL', ntk.value}
 end
 function boolean(stream)
     local token = stream:pointer()
     if lib.tcontains({'TRUE'}, token.type) then
         stream:match('TRUE')
-        return {'BOOLEAN', true}
+        return {'CONST', true}
     elseif lib.tcontains({'FALSE'}, token.type) then
         stream:match('FALSE')
-        return {'BOOLEAN', false}
+        return {'CONST', false}
     else
         lib.err('boolean: syntax error at {}',{stream:pointer().value})
     end

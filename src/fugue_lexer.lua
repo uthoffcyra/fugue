@@ -37,10 +37,12 @@ local token_specs = {
     {'SPECIAL', '@'},
     {'NOT',     '!'},
     -- names, numbers, etc
+    {'NONE',       'none'},
     {'TRUE',       'true'},
     {'FALSE',      'false'},
     {'NAME',       '[%a_][%w_]*'},
-    {'STRING',     '"[^\"]*"'},
+    {'STRING',     '"[^\")]*"'},
+    {'STRING',     "'[^\']*'"},
     {'INTEGER',    '%d+'},
     {'WHITESPACE', '[ \t\n]+'},
     {'UNKNOWN',    '.'}
@@ -68,9 +70,9 @@ function tokenize(code)
         --print(string.format("'%s' at %d-%d (%s)", match.value, match.start, match.finish, match.type))
         if lib.tcontains({'WHITESPACE','COMMENT'}, match.type) then -- pass
             if (match.type == 'COMMENT') then
-                term.setTextColor(colors.lightBlue)
-                print(match.value)
-                term.setTextColor(colors.white)
+                -- term.setTextColor(colors.lightBlue)
+                -- print(match.value)
+                -- term.setTextColor(colors.white)
             end
         elseif match.type == 'UNKNOWN' then -- error, unknown token
             lib.err('unexpected character \'{}\'',{match.value})
