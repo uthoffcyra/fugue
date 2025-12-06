@@ -2,9 +2,18 @@
 fugue language interpreter
 ]]--
 
+-- loads fugue's version # to global
+_G.fugue = {_VERSION_ = '0.1.1'}
+
 local lib = require('fugue_lib')
+
 local parse = require('fugue_fe')
 local state = require('fugue_state')
+
+-- local symtab = require('fugue_symtab')
+-- local fe_global = require('fugue_builtin')
+local run = require('fugue_walk')
+
 local args = {...}
 
 function print_ast()
@@ -22,18 +31,17 @@ function print_ast()
         lib.tprint(x)
     end
 
+    term.setTextColor(colors.lime)
+    print('Running...')
     term.setTextColor(colors.white)
 
 end
 
 function interp(input_stream)
-    print('Starting...')
     state:initialize()
     parse(input_stream)
-
-    print_ast()
-
-    -- interp_program()
+    -- print_ast()
+    run(state.program)
 end
 
 if args[1] then

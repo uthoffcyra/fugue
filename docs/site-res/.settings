@@ -1,0 +1,4 @@
+{
+    [ "list.show_hidden" ] = false,
+    [ "motd.path" ] = ".fugue.motd",
+}

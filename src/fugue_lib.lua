@@ -36,13 +36,14 @@ function tprint_local(table)
 end
 function tprint_types(value)
     if type(value) == 'table' then
+        local rem = term.getTextColor()
         term.setTextColor(colors.lightGray)
         write('{ ')
         term.setTextColor(colors.white)
         tprint_local(value)
         term.setTextColor(colors.lightGray)
         write('} ')
-        term.setTextColor(colors.white)
+        term.setTextColor(rem)
     else
         write(tostring(value)..' ')
     end
