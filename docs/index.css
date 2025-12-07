@@ -1,30 +1,65 @@
+html {
+    --background: #071E22;
+    --foreground-1: #1D7874;
+    --foreground-2: #8ebab7;
+
+    --text-1: #ffd0aa;
+    --text-2: #679289;
+    --text-p: #e4dccd;
+
+    --term-border: #5C918D;
+
+    --warn: #ff9393;
+    --link: #afc3dd;
+    --radius: 8px;
+}
+
 body {
-    background-color: #071E22;
-    font-family: "Lucida Grande", "Lucida Sans Unicode", Verdana, Helvetica, sans-serif;
+    background-color: var(--background);
+    font-family: "Lucida Grande", "Lucida Sans Unicode",
+        Verdana, Helvetica, sans-serif;
     margin: 20px;
 }
 
 h1, h2 {
-    color: #ffd0aa;
-    text-shadow: #679289 2px 2px 0;
+    color: var(--text-1);
+    text-shadow: var(--text-2) 2px 2px 0;
     margin: 0;
+}
+h3 {
+    color: var(--text-1);
+    margin: 12px 0 0 0;
 }
 
 p {
-    color: #e4dccd;
+    color: var(--text-p);
+    margin: 0;
+    margin-top: 8px;
+    text-align: justify;
+}
+.box > a {
+    color: var(--link);
+    display: block;
     margin: 0;
     margin-top: 8px;
 }
 
+.box-profile {
+    display: grid;
+    grid-template-columns: 2fr 4fr;
+    grid-gap: 20px;
+}
 .box {
-    background-color: #1D7874;
+    background-color: var(--foreground-1);
     padding: 20px;
     margin-bottom: 20px;
+    outline: solid 1px var(--foreground-2);
+    border-radius: var(--radius);
 }
 
 #loading-emulator {
     & div {
-        color: #ff9393;
+        color: var(--warn);
         font-size: 32px;
         font-weight: bold;
         text-align: center;
@@ -45,12 +80,18 @@ p {
 }
 
 .dXWpFa_terminalView > div {
-    outline: solid 2px #1d7874;
+    outline: solid 2px var(--term-border);
+    border-radius: var(--radius);
+    overflow: hidden !important;
 }
 .dXWpFa_terminalBar {
-    background-color: #679289 !important;
-    color: #ffd0aa !important;
-    fill: #ffd0aa !important;
+    background-color: var(--text-2) !important;
+    color: var(--text-1) !important;
+    fill: var(--text-1) !important;
+    border-radius: 0 0 var(--radius) var(--radius);
+}
+.dXWpFa_terminalButton:hover {
+    background: var(--foreground-1) !important;
 }
 .dXWpFa_terminalProgress {
     display: none;
