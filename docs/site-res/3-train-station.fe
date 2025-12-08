@@ -9,5 +9,5 @@ event-loop,
     let color;
     if name == 'Bay Line', color = @cyan;
     if name == 'Orange Line', color = @orange;
-    print(@color, name, @lighGray, 'has arrived at the station.');
+    print(@color, name, @lightGray, 'has arrived at the station.');
 };
