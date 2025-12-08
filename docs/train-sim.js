@@ -41,7 +41,6 @@ let train_system = {
 function actualSegId(path,id) {
     if (path.loop_type == 'bounce' && id >= path.segments.length) {
         let calculate = path.segments.length-(id-path.segments.length)-2;
-        console.log('bounceback ' + id + ' -> ' + calculate);
         return calculate;
     } else {
         return id;
@@ -83,14 +82,10 @@ function updateTrain(index) {
     }
 
     trainDiagramUpdate(path,prev_seg_id,config.seg_id,config.color);
-
-    // Send Event to Computer.
-    if (path.segments[actualSegId(path,config.seg_id)] == 'Station') {
-        computer.queueEvent('train_arrival',[config.name]);
-    }
     
     /* Schedule Next Update */
-    if (path.segments[config.seg_id] == 'Station') { // At station.
+    if (path.segments[actualSegId(path,config.seg_id)] == 'Station') { // At station.
+        computer.queueEvent('train_arrival',[config.name]);
         setTimeout(()=>{ updateTrain(index) },config.time_at_station);
     } else if (config.seg_id == -1 || (config.seg_id == 0 && path.loop_type == 'bounce')) { // At loop.
         setTimeout(()=>{ updateTrain(index) },path.loop_time);
