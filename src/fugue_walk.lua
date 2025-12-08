@@ -22,7 +22,7 @@ end
 function treat_as_boolean(v)
     -- v = { type, value }
     if v[1] == 'boolean' then
-        return exp[2]
+        return v
     elseif v[1] == 'none' then
         return {'boolean', false}
     elseif v[1] == 'number' and v[2] == 0 then

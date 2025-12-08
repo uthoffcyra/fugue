@@ -83,6 +83,11 @@ function updateTrain(index) {
     }
 
     trainDiagramUpdate(path,prev_seg_id,config.seg_id,config.color);
+
+    // Send Event to Computer.
+    if (path.segments[actualSegId(path,config.seg_id)] == 'Station') {
+        computer.queueEvent('train_arrival',[config.name]);
+    }
     
     /* Schedule Next Update */
     if (path.segments[config.seg_id] == 'Station') { // At station.
