@@ -22,24 +22,106 @@
     <div id='embed-computer'></div>
 </div>
 
+<div id='sub-emulators'>
+    <div id='train-sim' class='window' style='display: none;'>
+        <div class='window-bar'>
+            <span class='close' onclick='closeWindow("train-sim")'>X</span>
+            <span>train junction</span>
+        </div>
+        <div style='font-size: 0;'>
+            <svg id='train-sim-svg' viewBox='0 0 2940 1912'>
+                <g id="Track-W">
+                    <path id="Track-W-1" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M -62 1019 L 195 1019 L 195 904 L -62 904 Z"/>
+                    <path id="Track-W-2" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 238 1019 L 495 1019 L 495 904 L 238 904 Z"/>
+                    <path id="Track-W-3" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 538 1019 L 795 1019 L 795 904 L 538 904 Z"/>
+                    <path id="Track-W-4" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 838 1019 L 1095 1019 L 1095 904 L 838 904 Z"/>
+                    <path id="Track-W-5" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 1138 1019 L 1395 1019 L 1395 904 L 1138 904 Z"/>
+                </g>
+                <g id="Track-E">
+                    <path id="Track-E-1" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 1558 1019 L 1815 1019 L 1815 904 L 1558 904 Z"/>
+                    <path id="Track-E-2" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 1858 1019 L 2115 1019 L 2115 904 L 1858 904 Z"/>
+                    <path id="Track-E-3" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 2158 1019 L 2415 1019 L 2415 904 L 2158 904 Z"/>
+                    <path id="Track-E-4" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 2458 1019 L 2715 1019 L 2715 904 L 2458 904 Z"/>
+                    <path id="Track-E-5" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 2758 1019 L 3015 1019 L 3015 904 L 2758 904 Z"/>
+                </g>
+                <g id="Track-NW">
+                    <path id="Track-NW-1" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M -76.87928 -55.376587 L 133.642792 92.032593 L 199.60408 -2.169922 L -10.917992 -149.579102 Z"/>
+                    <path id="Track-NW-2" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 168.04718 116.122803 L 378.569244 263.531982 L 444.530548 169.329468 L 234.008469 21.920288 Z"/>
+                    <path id="Track-NW-3" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 413.792786 288.195679 L 624.31488 435.604858 L 690.276184 341.402344 L 479.754089 193.993286 Z"/>
+                    <path id="Track-NW-4" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 659.538391 460.268677 L 870.060486 607.677734 L 936.02179 513.475342 L 725.499695 366.066162 Z"/>
+                    <path id="Track-NW-5" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 905.283997 632.341553 L 1115.806152 779.750732 L 1181.767334 685.548218 L 971.2453 538.139038 Z"/>
+                    <path id="Track-NW-6" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 1151.029663 804.414551 L 1361.551758 951.823669 L 1427.512939 857.621216 L 1216.990967 710.212036 Z"/>
+                </g>
+                <g id="Track-SE">
+                    <path id="Track-SE-1" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 1543.120728 1079.623413 L 1753.642822 1227.032593 L 1819.604126 1132.830078 L 1609.082031 985.420959 Z"/>
+                    <path id="Track-SE-2" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 1788.047119 1251.122803 L 1998.569214 1398.531982 L 2064.530518 1304.329468 L 1854.008423 1156.920288 Z"/>
+                    <path id="Track-SE-3" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 2033.792847 1423.195679 L 2244.314941 1570.604858 L 2310.276123 1476.402344 L 2099.75415 1328.993164 Z"/>
+                    <path id="Track-SE-4" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 2279.53833 1595.268677 L 2490.060547 1742.677734 L 2556.021729 1648.475342 L 2345.499756 1501.066162 Z"/>
+                    <path id="Track-SE-5" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 2525.283936 1767.341553 L 2735.806152 1914.750732 L 2801.767334 1820.548218 L 2591.245361 1673.139038 Z"/>
+                    <path id="Track-SE-6" fill="#ffffff" fill-rule="evenodd" stroke="none" d="M 2771.029541 1939.414551 L 2981.551758 2086.82373 L 3047.512939 1992.621216 L 2836.990967 1845.212036 Z"/>
+                </g>
+                <path id="Station" fill="#ffffff" fill-rule="evenodd" stroke="#04191a" stroke-width="66.666664" stroke-linecap="round" stroke-linejoin="round" d="M 1647 956 C 1647 861.00708 1569.99292 784 1475 784 C 1380.00708 784 1303 861.00708 1303 956 C 1303 1050.99292 1380.00708 1128 1475 1128 C 1569.99292 1128 1647 1050.99292 1647 956 Z"/>
+            </svg>
+        </div>
+    </div>
+    <div id='fileview' class='window' style='display: none;'>
+        <div class='window-bar'>
+            <span class='close' onclick='closeWindow("fileview")'>X</span>
+            <span id='fileview-path'></span>
+        </div>
+        <div id='fileview-code'></div>
+    </div>
+</div>
+
 <div class='box-profile'>
     <div class='box'>
         <h2>about</h2>
         <p>'fugue' is an interpreted programming language created with lua. it was purpose-designed around the minecraft computercraft:tweaked mod, with an emphasis on smaller keywords, shortcuts for common actions, and custom event-loop objects made for interacting with the in-game world.</p>
         <h3>papers</h3>
-        <a href='target:newtab' target='_blank'>2025-12-xx final project.pdf</a>
-        <a href='target:newtab' target='_blank'>2025-11-16 project proposal.pdf</a>
-        <h3>related</h3>
+        <a href='about:newtab' target='_blank'>2025-12-xx final project.pdf</a>
+        <a href='./papers/2025-11-16 project proposal.pdf' target='_blank'>2025-11-16 project proposal.pdf</a>
+        <h3>links & related</h3>
         <a href='https://github.com/uthoffcyra/fugue' target='_blank'>fugue source code (github)</a>
         <a href='https://github.com/cc-tweaked/CC-Tweaked/' target='_blank'>cc:tweaked mod (github)</a>
+        <a href='https://modrinth.com/mod/cc-tweaked' target='_blank'>cc:tweaked mod (modrinth)</a>
+        <a href='https://wiki.createmod.net/users/cc-tweaked-integration/train/train-station#train_arrival' target='_blank'>create mod wiki - 'train_arrival'</a>
     </div>
     <div class='box'>
-        <h2>playground</h2>
-        <p>under construction</p>
+        <h2>examples</h2>
+        <p>click on the boxes below to pull up a specific example of fugue's interpreter in action!</p>
+        <div class='example-buttons'>
+
+            <div onclick='run_example(1);'>
+                <div><img src='svg-icons/example-1.svg'/></div>
+                <div>
+                    <h3>Example 1</h3>
+                    <p>Arithmetic</p>
+                </div>
+            </div>
+
+            <div onclick='run_example(2);'>
+                <div><img src='svg-icons/example-2.svg'/></div>
+                <div>
+                    <h3>Example 2</h3>
+                    <p>Keywatcher</p>
+                </div>
+            </div>
+
+            <div onclick='run_example(3);'>
+                <div><img src='svg-icons/example-3.svg'/></div>
+                <div>
+                    <h3>Example 3</h3>
+                    <p>Train Station</p>
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
 
 <script type='text/javascript' src='https://copy-cat.squiddev.cc/require.js'></script>
+<script src='./highlight.js'></script>
+<script src='./train-sim.js'></script>
 <script src='./index.js'></script>
 
 </body>
