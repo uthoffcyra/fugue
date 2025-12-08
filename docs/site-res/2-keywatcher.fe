@@ -1,0 +1,9 @@
+~ detect key presses ~
+
+print(@gray, 'press any key. escape program with (-) button in bottom right.');
+print(@gray, '1) key name, 2) is held.');
+
+event-loop,
+("key") as (key, is_held) {
+    print(@lime, key, @orange, is_held);
+}
