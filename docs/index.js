@@ -16,25 +16,33 @@ var load_these_files = [
     files:['1-arithmetic.fe','2-keywatcher.fe']}
 ];
 
-function load_interpreter() {
-    load_these_files.forEach((folder_object) => {
+async function load_interpreter() {
 
+    const allPromises = [];
+
+    load_these_files.forEach((folder_object) => {
         folder_object.files.forEach((file_name) => {
 
             let base = 'https://raw.githubusercontent.com/uthoffcyra/fugue/';
             let source_folder = folder_object.source_folder;
             let target_folder = folder_object.target_folder;
 
-            fetch(base+ 'refs/heads/main/'+source_folder+'/'+file_name)
-            .then((response) => response.text().then((body)=>{
+            const promise = fetch(base+ 'refs/heads/main/'+source_folder+'/'+file_name)
+            .then(response => response.text())
+            .then(body=>{
                 files[target_folder+file_name] = body;
-            }));
+                console.log('['+file_name+']');
+            });
 
+            allPromises.push(promise);
         });
-
     });
 
+    await Promise.all(allPromises);
+
+    console.log('load emulator');
     load_emulator();
+
 }
 
 function load_emulator() {
@@ -97,12 +105,16 @@ function run_example(n) {
     window.scrollTo(0, 0);
     computer.reboot();
 
-    // Sub-Emulators
+    // Fileview
     if (examples[n-1].sub_emulators.includes('fileview')) {
         document.getElementById('fileview').style.display = 'block';
         document.getElementById('fileview-path').textContent = filename;
-        highlight(files[filename]);
+        if (files[filename]) {
+            highlight(files[filename]);
+        };
     } else { closeWindow('fileview') };
+    
+    // Train Simualtor
     if (examples[n-1].sub_emulators.includes('train-sim')) {
         document.getElementById('train-sim').style.display = 'block';
     } else { closeWindow('train-sim') };
@@ -114,4 +126,5 @@ function closeWindow(id) {
 
 window.addEventListener('load', (event) => {
     load_interpreter();
+    startTrainTimers();
 });
