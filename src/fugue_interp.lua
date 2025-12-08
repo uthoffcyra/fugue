@@ -3,7 +3,7 @@ fugue language interpreter
 ]]--
 
 -- loads fugue's version # to global
-_G.fugue = {_VERSION_ = '0.1.1'}
+_G.fugue = {_VERSION_ = '0.1.2'}
 
 local lib = require('fugue_lib')
 
@@ -45,8 +45,12 @@ function interp(input_stream)
 end
 
 if args[1] then
-    local file = fs.open(args[1], 'r')
-    local contents = file.readAll()
-    file.close()
-    interp(contents)
+    if fs.exists(args[1]) then
+        local file = fs.open(args[1], 'r')
+        local contents = file.readAll()
+        file.close()
+        interp(contents)
+    else
+        lib.err('file not found: {}', {args[1]})
+    end
 end
