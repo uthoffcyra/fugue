@@ -13,7 +13,7 @@ var load_these_files = [
     files:['.fugue.motd','.settings','startup.lua']},
     // Example Files
     {source_folder:'docs/site-res', target_folder: 'example/',
-    files:['1-arithmetic.fe','2-keywatcher.fe']}
+    files:['1-arithmetic.fe','2-keywatcher.fe','3-train-station.fe']}
 ];
 
 async function load_interpreter() {

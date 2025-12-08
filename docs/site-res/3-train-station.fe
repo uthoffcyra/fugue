@@ -7,5 +7,5 @@ event-loop,
     let color = @gray;
     if name == 'Bay Line', color = @cyan;
     if name == 'Orange Line', color = @orange;
-    print('Train [', color, name, '] has arrived at the station.');
+    print('Train [', @color, name, @white, '] has arrived at the station.');
 };
