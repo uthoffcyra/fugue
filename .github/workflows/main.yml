@@ -51,7 +51,7 @@ jobs:
     - name: Create datapack zip
       run: |
         cd temp_datapack
-        zip -r ../datapack.zip .
+        zip -r ../datapack-${{ steps.get_version.outputs.version }}.zip pack.mcmeta data
         cd ..
     
     - name: Get version from tag
