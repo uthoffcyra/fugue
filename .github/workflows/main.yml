@@ -1,0 +1,83 @@
+name: Build Minecraft Datapack
+
+on:
+  push:
+    tags:
+      - 'v*.*'
+  workflow_dispatch:
+
+jobs:
+  build-datapack:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Create datapack structure
+      run: |
+        mkdir -p temp_datapack/data/computercraft/lua/rom/fugue
+        mkdir -p temp_datapack/data/computercraft/lua/rom/autorun
+    
+    - name: Copy Lua files to datapack
+      run: |
+        cp -r src/*.lua temp_datapack/data/computercraft/lua/rom/fugue/ 2>/dev/null || :
+        if [ -d "src" ]; then
+          find src -name "*.lua" -exec cp {} temp_datapack/data/computercraft/lua/rom/fugue/ \;
+        fi
+    
+    - name: Create pack.mcmeta
+      run: |
+        cat > temp_datapack/pack.mcmeta << EOF
+        {
+          "pack": {
+            "pack_format": 12,
+            "description": "Fugue Lang Datapack"
+          }
+        }
+        EOF
+
+    - name: Create autorun script
+      run: |
+        cat > temp_datapack/data/computercraft/lua/rom/autorun << EOF
+        local completion = require('cc.shell.completion')
+        shell.setCompletionFunction('/rom/fugue/fugue_interp.lua',
+          completion.build( completion.file ))
+        shell.setAlias('fe', '/rom/fugue/fugue_interp.lua')
+        EOF
+    
+    - name: Create datapack zip
+      run: |
+        cd temp_datapack
+        zip -r ../datapack.zip .
+        cd ..
+    
+    - name: Get version from tag
+      id: get_version
+      run: |
+        if [ "${{ github.ref_type }}" = "tag" ]; then
+          echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=dev-${{ github.sha }}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      if: github.ref_type == 'tag'
+      with:
+        files: datapack.zip
+        name: Release ${{ steps.get_version.outputs.version }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload artifact (for manual runs)
+      if: github.ref_type != 'tag'
+      uses: actions/upload-artifact@v4
+      with:
+        name: minecraft-datapack-${{ steps.get_version.outputs.version }}
+        path: datapack.zip
+        retention-days: 30
