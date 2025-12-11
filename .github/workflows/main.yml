@@ -74,10 +74,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Upload artifact (for manual runs)
-      if: github.ref_type != 'tag'
+    - name: Rename datapack with version
+      run: |
+        mv datapack.zip fugue-datapack-${{ steps.get_version.outputs.version }}.zip
+    
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: fugue-datapack-${{ steps.get_version.outputs.version }}
-        path: datapack.zip
-        retention-days: 30
+        path: fugue-datapack-${{ steps.get_version.outputs.version }}.zip
+        retention-days: 7
