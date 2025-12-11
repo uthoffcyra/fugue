@@ -41,7 +41,7 @@ jobs:
 
     - name: Create autorun script
       run: |
-        cat > temp_datapack/data/computercraft/lua/rom/autorun << EOF
+        cat > temp_datapack/data/computercraft/lua/rom/autorun/fugue_startup.lua << EOF
         local completion = require('cc.shell.completion')
         shell.setCompletionFunction('/rom/fugue/fugue_interp.lua',
           completion.build( completion.file ))
