@@ -1,16 +1,11 @@
 name: Build Minecraft Datapack
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
   workflow_dispatch:
 
 jobs:
   build-datapack:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     
     steps:
     - name: Checkout repository
@@ -50,9 +45,7 @@ jobs:
     
     - name: Create datapack zip
       run: |
-        cd temp_datapack
-        zip -r ../datapack.zip pack.mcmeta data
-        cd ..
+        cd temp_datapack && zip -r ../datapack.zip pack.mcmeta data/
     
     - name: Get version from tag
       id: get_version
