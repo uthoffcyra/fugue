@@ -1,9 +1,6 @@
 name: Build Minecraft Datapack
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
   workflow_dispatch:
 
 jobs:
