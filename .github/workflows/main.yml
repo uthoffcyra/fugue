@@ -56,17 +56,6 @@ jobs:
           echo "version=dev-${{ github.sha }}" >> $GITHUB_OUTPUT
         fi
     
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      if: github.ref_type == 'tag'
-      with:
-        files: fugue-datapack-${{ steps.get_version.outputs.version }}.zip
-        name: Release ${{ steps.get_version.outputs.version }}
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
     - name: Rename datapack with version
       run: |
         mv datapack.zip fugue-datapack-${{ steps.get_version.outputs.version }}.zip
