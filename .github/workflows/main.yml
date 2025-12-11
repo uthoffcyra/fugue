@@ -48,7 +48,7 @@ jobs:
     - name: Create datapack zip
       run: |
         cd temp_datapack
-        zip -r ../datapack.zip pack.mcmeta data
+        zip -r ../fugue-datapack-${{ steps.get_version.outputs.version }}.zip pack.mcmeta data
         cd ..
     
     - name: Get version from tag
@@ -76,5 +76,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: fugue-datapack-${{ steps.get_version.outputs.version }}
-        path: datapack.zip
+        path: fugue-datapack-${{ steps.get_version.outputs.version }}.zip
         retention-days: 30
