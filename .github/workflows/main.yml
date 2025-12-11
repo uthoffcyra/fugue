@@ -67,7 +67,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       if: github.ref_type == 'tag'
       with:
-        files: datapack.zip
+        files: fugue-datapack-${{ steps.get_version.outputs.version }}.zip
         name: Release ${{ steps.get_version.outputs.version }}
         draft: false
         prerelease: false
@@ -78,6 +78,6 @@ jobs:
       if: github.ref_type != 'tag'
       uses: actions/upload-artifact@v4
       with:
-        name: minecraft-datapack-${{ steps.get_version.outputs.version }}
+        name: fugue-datapack-${{ steps.get_version.outputs.version }}
         path: datapack.zip
         retention-days: 30
