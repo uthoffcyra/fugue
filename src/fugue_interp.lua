@@ -3,7 +3,7 @@ fugue language interpreter
 ]]--
 
 -- loads fugue's version # to global
-_G.fugue = {_VERSION_ = '0.1.3'}
+_G.fugue = {_VERSION_ = '0.2.0'}
 
 local lib = require('fugue_lib')
 

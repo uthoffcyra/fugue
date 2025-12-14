@@ -183,6 +183,17 @@ dispatch['IF'] = function(node)
     local check = treat_as_boolean(exp)
     if check[2] then walk(stmt) end
 end
+dispatch['WHILE'] = function(node)
+    local IF, exp, stmt = unpack(node)
+    local exp_it = walk(exp)
+    local check = treat_as_boolean(exp_it)
+    while check[2] do
+        walk(stmt)
+        -- re-compute check
+        exp_it = walk(exp)
+        check = treat_as_boolean(exp_it)
+    end
+end
 dispatch['EVENT_LOOP'] = function(node)
     local EVENT_LOOP, res_list = unpack(node)
 
@@ -267,7 +278,7 @@ dispatch['LEQ'] = function(node)
             return {'boolean', false}
         end
     else
-        lib.err('attempted to check size of non-number type(s)')
+        lib.err('attempted to check numerical value of non-number type(s)')
     end
 end
 dispatch['GEQ'] = function(node)
@@ -282,7 +293,37 @@ dispatch['GEQ'] = function(node)
             return {'boolean', false}
         end
     else
-        lib.err('attempted to check size of non-number type(s)')
+        lib.err('attempted to check numerical value of non-number type(s)')
+    end
+end
+dispatch['GT'] = function(node)
+    local GT, e1, e2 = unpack(node)
+    e1 = walk(e1) -- { type, value }
+    e2 = walk(e2)
+
+    if e1[1] == 'number' and e2[1] == 'number' then
+        if e1[2] > e2[2] then
+            return {'boolean', true}
+        else
+            return {'boolean', false}
+        end
+    else
+        lib.err('attempted to check numerical value of non-number type(s)')
+    end
+end
+dispatch['LT'] = function(node)
+    local GT, e1, e2 = unpack(node)
+    e1 = walk(e1) -- { type, value }
+    e2 = walk(e2)
+
+    if e1[1] == 'number' and e2[1] == 'number' then
+        if e1[2] < e2[2] then
+            return {'boolean', true}
+        else
+            return {'boolean', false}
+        end
+    else
+        lib.err('attempted to check numerical value of non-number type(s)')
     end
 end
 

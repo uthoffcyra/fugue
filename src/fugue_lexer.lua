@@ -14,13 +14,18 @@ local token_specs = {
     {'FN_RETURN',   'res'},
     {'LOAD',        'load'},
     {'IF',          'if'},
+--  {'ELSE_IF',     'elif'},
+--  {'ELSE',        'else'},
+    {'WHILE',       'while'},
     {'EVENT_LOOP',  'event%-loop'},
     {'AS',          'as'},
     -- special characters
-    {'EQU',    '=='},
-    {'LEQ',    '<='},
-    {'NEQ',    '!='},
-    {'GEQ',    '>='},
+    {'EQU',     '=='},
+    {'LEQ',     '<='},
+    {'NEQ',     '!='},
+    {'GEQ',     '>='},
+    {'GT',      '>'},
+    {'LT',      '<'},
     {'PLUS',    '%+'},
     {'MINUS',   '%-'},
     {'MUL',     '%*'},
@@ -70,9 +75,6 @@ function tokenize(code)
         --print(string.format("'%s' at %d-%d (%s)", match.value, match.start, match.finish, match.type))
         if lib.tcontains({'WHITESPACE','COMMENT'}, match.type) then -- pass
             if (match.type == 'COMMENT') then
-                -- term.setTextColor(colors.lightBlue)
-                -- print(match.value)
-                -- term.setTextColor(colors.white)
             end
         elseif match.type == 'UNKNOWN' then -- error, unknown token
             lib.err('unexpected character \'{}\'',{match.value})

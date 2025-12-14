@@ -16,7 +16,7 @@ local Lexer = require('fugue_lexer').Lexer
 local args = {...}
 
 -- stmt_list : ({<see below>} stmt)*
-stmt_lookahead = {'VAR_DECL', 'FN_DECL', 'FN_RETURN', 'NAME', 'LCURLY', 'LOAD', 'IF', 'EVENT_LOOP'}
+stmt_lookahead = {'VAR_DECL', 'FN_DECL', 'FN_RETURN', 'NAME', 'LCURLY', 'LOAD', 'IF', 'WHILE', 'EVENT_LOOP'}
 function stmt_list(stream)
     local lst = {}
     while lib.tcontains(stmt_lookahead, stream:pointer().type) do
@@ -32,6 +32,7 @@ end
 --      | {LCURLY} LCURLY stmt_list RCURLY (SEMI)?
 --      | {LOAD} LOAD exp (SEMI)?
 --      | {IF} IF if_suffix (SEMI)?
+--      | {WHILE} WHILE while_suffix (SEMI)?
 --      | {EVENT_LOOP} EVENT_LOOP COMMA event_res_list (SEMI)?
 function stmt(stream)
     local token = stream:pointer()
@@ -97,7 +98,12 @@ function stmt(stream)
         local r = if_suffix(stream)
         stream:optional('SEMI')
         return r
-
+    -- While Statement
+    elseif lib.tcontains({'WHILE'}, token.type) then
+        stream:match('WHILE')
+        local r = while_suffix(stream)
+        stream:optional('SEMI')
+        return r
     -- Built-in Event Loop Structure
     elseif lib.tcontains({'EVENT_LOOP'}, token.type) then
         stream:match('EVENT_LOOP')
@@ -164,6 +170,7 @@ end
 
 -- if_suffix : {LPAREN} LPAREN exp RPAREN stmt
 --           | {<see exp lookahead>} exp COMMA stmt
+-- ~~ will be updated with 'elif' and 'else' ~~
 function if_suffix(stream)
     local token = stream:pointer()
     local e, r
@@ -180,6 +187,26 @@ function if_suffix(stream)
         lib.err('if-suffix: syntax error at {}',{stream:pointer().value})
     end
     return {'IF', e, r}
+end
+
+-- while_suffix : {LPAREN} LPAREN exp RPAREN stmt
+--              | {<see exp lookahead>} exp COMMA stmt
+function while_suffix(stream)
+    local token = stream:pointer()
+    local e, r
+    if lib.tcontains({'LPAREN'}, token.type) then
+        stream:match('LPAREN')
+        e = exp(stream)
+        stream:match('RPAREN')
+        r = stmt(stream)
+    elseif lib.tcontains(exp_lookahead, token.type) then
+        e = exp(stream)
+        stream:match('COMMA')
+        r = stmt(stream)
+    else
+        lib.err('while-suffix: syntax error at {}',{stream:pointer().value})
+    end
+    return {'WHILE', e, r}
 end
 
 -- event_res_list : {LPAREN} event_res ({COMMA} COMMA event_res)*
@@ -208,7 +235,7 @@ function event_res(stream)
 end
 
 -- exp      : exp_low
--- exp_low  : exp_med (({EQU,LEQ,NEQ,GEQ} EQU|LEQ|NEQ|GEQ) exp_med)*
+-- exp_low  : exp_med (({EQU,LEQ,NEQ,GEQ,GT,LT} EQU|LEQ|NEQ|GEQ|GT,LT) exp_med)*
 -- exp_med  : exp_high (({PLUS,MINUS,CONCAT} PLUS|MINUS|CONCAT) exp_high)*
 -- exp_high : primary (({MUL,DIV} MUL|DIV) primary)*
 -- primary  : {INTEGER} INTEGER
@@ -219,7 +246,7 @@ end
 --          | {SPECIAL} special_name
 --          | {LPAREN} LPAREN exp RPAREN
 --          | {NOT} NOT exp
-exp_lookahead = {'EQU', 'LEQ', 'NEQ', 'GEQ', 'PLUS', 'MINUS', 'CONCAT',
+exp_lookahead = {'EQU', 'LEQ', 'NEQ', 'GEQ', 'GT', 'LT', 'PLUS', 'MINUS', 'CONCAT',
     'MUL', 'DIV', 'INTEGER', 'STRING', 'NAME', 'SPECIAL', 'LPAREN',
     'NOT', 'TRUE', 'FALSE', 'NONE'}
 function exp(stream)
@@ -232,7 +259,7 @@ end
 function exp_low(stream)
     if lib.tcontains(exp_lookahead, stream:pointer().type) then
         local e1 = exp_med(stream)
-        while lib.tcontains({'EQU','LEQ','NEQ','GEQ'}, stream:pointer().type) do
+        while lib.tcontains({'EQU','LEQ','NEQ','GEQ','GT','LT'}, stream:pointer().type) do
             local op = stream:match(stream:pointer().type)
             local e2 = exp_med(stream)
             e1 = {op.type, e1, e2} -- e1 (op) e2
