@@ -23,6 +23,9 @@ function convert_to_string(v)
         else
             return {'string', 'false'}
         end
+    elseif v[1] == 'function' then
+        lib.tprint(v)
+        return {'string', '<function>'}
     elseif v[1] == 'none' then
         return {'string', 'none'}
     else
@@ -103,6 +106,33 @@ builtins['child'] = function(arg_list)
     else return {'none'} end
 end
 
+builtins['error'] = function(arg_list)
+    local cmem = term.getTextColor()
+    term.setTextColor(colors.red)
+    write('\127\127 ')
+    for i,value in ipairs(arg_list) do
+        write(convert_to_string(value)[2])
+        if i < #arg_list then write(' ') end
+    end
+    write(' \127\127')
+    term.setTextColor(cmem)
+    print()
+
+    error('',0)
+end
+builtins['warn'] = function(arg_list)
+    local cmem = term.getTextColor()
+    term.setTextColor(colors.orange)
+    write('\127\127 ')
+    for i,value in ipairs(arg_list) do
+        write(convert_to_string(value)[2])
+        if i < #arg_list then write(' ') end
+    end
+    write(' \127\127')
+    term.setTextColor(cmem)
+    print()
+end
+
 -------------------------------------------------------------------------
 -- initial global variables
 -------------------------------------------------------------------------
@@ -113,7 +143,7 @@ fe_defaults['_VERSION_']   = {'string', _G['fugue']['_VERSION_']}
 fe_defaults['_EXEC_TIME_'] = {'string', os.date('%c')}
 
 fe_defaults['peripherals'] = {'special', {kind='loadable',
-     value={'string', 'peripherals'}}}
+    value={'string', 'peripherals'}}}
 
 fe_defaults['white']     = {'special', {kind='color', value={'number', 0x1}}}
 fe_defaults['orange']    = {'special', {kind='color', value={'number', 0x2}}}

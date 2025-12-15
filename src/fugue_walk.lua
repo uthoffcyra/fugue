@@ -11,14 +11,13 @@ local dispatch = {}
 
 -------------------------------------------------------------------------
 
-function get_type(v)
-    if type(v) == 'table' and v._interp_type then
-        return value._interp_type
-    else
-        return type(v)
-    end
+function fe_type(v)
+    -- if type(v) == 'table' and v._interp_type then
+    --     return value._interp_type
+    -- else
+    return type(v)
+    -- end
 end
-
 function treat_as_boolean(v)
     -- v = { type, value }
     if v[1] == 'boolean' then
@@ -32,17 +31,13 @@ function treat_as_boolean(v)
     end
 end
 
+-- creates a new scope with ...
+-- 1) argument variable names
+-- 2) argument input values
+-- 3) internal function body
 function scope_with_args(ard,arc,fb)
     -- load arguments...
     symtab:push_scope()
-
-    --[[for i,name in ipairs(ard) do
-        if arc[i] then -- if matching value in call
-            symtab:declare(name,arc[i])
-        else
-            symtab:declare(name,{'none'})
-        end
-    end]]
 
     local i = 1
     while true do
@@ -69,20 +64,23 @@ function scope_with_args(ard,arc,fb)
     return return_value
 end
 
+-- gives custom event parameters
 function validate_event_call(event,arc)
     local t = {}
     for i,v in ipairs(arc) do
         if v == nil then break end
         -- custom exceptions
-        if lib.tcontains({'key', 'key_up'},event) and i==1 then
+        if lib.tcontains({'key', 'key_up'}, event) and i==1 then
             v = keys.getName(v)
         end
 
-        table.insert(t, {type(v),v})
+        table.insert(t, {fe_type(v),v})
     end
     return t
 end
 
+-- wraps all peripherals
+-- runs at 'load @peripherals;'
 function wrap_peripherals()
     local names = peripheral.getNames()
     for i,n in ipairs(names) do
@@ -388,6 +386,11 @@ end
 
 -------------------------------------------------------------------------
 
+dispatch['LAMBDA'] = function (node)
+    local LAMBDA, ard, fb = unpack(node)
+    ard = walk(ard) -- see 'DECL_ARGS'
+    return {'function', {arguments=ard, body=fb}}
+end
 dispatch['NAME'] = function(node)
     local NAME, n = unpack(node)
     local check = symtab:lookup_sym(n)
@@ -402,7 +405,7 @@ dispatch['SPECIAL'] = function(node)
 end
 dispatch['CONST'] = function(node)
     local CONST, v = unpack(node)
-    return {get_type(v), v} -- returns value
+    return {fe_type(v), v} -- returns value
 end
 dispatch['NONE'] = function(node)
     return {'none'}

@@ -20,6 +20,8 @@ local token_specs = {
     {'EVENT_LOOP',  'event%-loop'},
     {'AS',          'as'},
     -- special characters
+--  {'AND',     '&'},
+--  {'OR',      '|'},
     {'EQU',     '=='},
     {'LEQ',     '<='},
     {'NEQ',     '!='},

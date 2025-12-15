@@ -53,4 +53,11 @@ if args[1] then
     else
         lib.err('file not found: {}', {args[1]})
     end
+else
+    local mem = term.getTextColor()
+    term.setTextColor(colors.orange)
+    print('Fugue Language')
+    term.setTextColor(colors.gray)
+    print('Version '.._G.fugue._VERSION_)
+    term.setTextColor(mem)
 end

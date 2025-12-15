@@ -247,7 +247,7 @@ end
 --          | {LPAREN} LPAREN exp RPAREN
 --          | {NOT} NOT exp
 exp_lookahead = {'EQU', 'LEQ', 'NEQ', 'GEQ', 'GT', 'LT', 'PLUS', 'MINUS', 'CONCAT',
-    'MUL', 'DIV', 'INTEGER', 'STRING', 'NAME', 'SPECIAL', 'LPAREN',
+    'MUL', 'DIV', 'INTEGER', 'STRING', 'FN_DECL', 'NAME', 'SPECIAL', 'LPAREN',
     'NOT', 'TRUE', 'FALSE', 'NONE'}
 function exp(stream)
     if lib.tcontains(exp_lookahead, stream:pointer().type) then
@@ -317,6 +317,10 @@ function primary(stream)
         local tk = stream:match('STRING')
         return {'CONST', tostring(tk.value:sub(2, -2))}
 
+    -- Lambda
+    elseif lib.tcontains({'FN_DECL'}, token.type) then
+        return lambda(stream)
+
     -- Variable / Function
     elseif lib.tcontains({'NAME'}, token.type) then
         local n = name(stream)
@@ -346,6 +350,15 @@ function primary(stream)
     else
         lib.err('primary: syntax error at {}',{stream:pointer().value})
     end
+end
+
+-- lambda : {FN_DECL} FN_DECL decl_args stmt (SEMI)?
+function lambda(stream)
+    stream:match('FN_DECL')
+    local ard = decl_args(stream)
+    local fb = stmt(stream)
+    stream:optional('SEMI')
+    return {'LAMBDA', ard, fb}
 end
 
 function name(stream)

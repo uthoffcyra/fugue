@@ -72,6 +72,17 @@ end
 
 --------------------------------------
 
+function warn(text,repl)
+    local mem = {term.getTextColor(),term.getBackgroundColor()}
+    term.setTextColor(colors.black)
+    term.setBackgroundColor(colors.orange)
+    if repl then text = format(text,repl) end
+    write(text)
+    term.setTextColor(mem[1])
+    term.setBackgroundColor(mem[2])
+    write('\n')
+end
+
 function err(text,repl)
     local mem = {term.getTextColor(),term.getBackgroundColor()}
     term.setTextColor(colors.black)
@@ -81,6 +92,8 @@ function err(text,repl)
     term.setTextColor(mem[1])
     term.setBackgroundColor(mem[2])
     write('\n')
+
+    error('',0)
 end
 
 --------------------------------------
@@ -129,6 +142,6 @@ return {
     format=format,
     finditer=finditer,
     finditer_multi=finditer_multi,
-    err=err,
+    err=err, warn=warn,
     tcontains=tcontains
 }
