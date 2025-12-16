@@ -173,7 +173,7 @@ end
 -- ~~ will be updated with 'elif' and 'else' ~~
 function if_suffix(stream)
     local token = stream:pointer()
-    local e, r
+    local e, r -- "expression, response"
     if lib.tcontains({'LPAREN'}, token.type) then
         stream:match('LPAREN')
         e = exp(stream)
@@ -186,7 +186,20 @@ function if_suffix(stream)
     else
         lib.err('if-suffix: syntax error at {}',{stream:pointer().value})
     end
-    return {'IF', e, r}
+
+    -- else if, else statements
+    token = stream:pointer()
+    local c = false -- continue?
+    if lib.tcontains({'ELSE_IF'}, token.type) then
+        stream:match('ELSE_IF')
+        c = if_suffix(stream)
+    elseif lib.tcontains({'ELSE'}, token.type) then
+        stream:match('ELSE')
+        local cr = stmt(stream)
+        c = {'ELSE', cr}
+    end
+
+    return {'IF', e, r, c}
 end
 
 -- while_suffix : {LPAREN} LPAREN exp RPAREN stmt

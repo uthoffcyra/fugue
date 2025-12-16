@@ -176,10 +176,19 @@ dispatch['LOAD'] = function(node)
     end
 end
 dispatch['IF'] = function(node)
-    local IF, exp, stmt = unpack(node)
+    local IF, exp, stmt, cont = unpack(node)
     exp = walk(exp)
     local check = treat_as_boolean(exp)
-    if check[2] then walk(stmt) end
+    -- if true, walk...
+    if check[2] == true then walk(stmt)
+    -- not true, check for else_if/else
+    elseif check[2] == false and cont ~= false then
+        if cont[1] == 'IF' then
+            walk(cont) -- walk embeded 'IF'
+        elseif cont[1] == 'ELSE' then
+            walk(cont[2]) -- walk 'ELSE' stmt
+        end
+    end
 end
 dispatch['WHILE'] = function(node)
     local IF, exp, stmt = unpack(node)
