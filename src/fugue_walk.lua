@@ -249,6 +249,44 @@ end
 
 -------------------------------------------------------------------------
 
+-- logicals
+dispatch['AND'] = function(node)
+    local AND, e1, e2 = unpack(node)
+    e1 = treat_as_boolean( walk(e1) )[2]
+    e2 = treat_as_boolean( walk(e2) )[2]
+
+    if e1 == true and e2 == true then -- T/T
+        return {'boolean', true}
+    else
+        return {'boolean', false}
+    end
+end
+dispatch['OR'] = function(node)
+    local OR, e1, e2 = unpack(node)
+    e1 = treat_as_boolean( walk(e1) )[2]
+    e2 = treat_as_boolean( walk(e2) )[2]
+
+    if (e1 == true and e2 == true) or -- T/T
+    (e1 == true and e2 == false) or   -- T/F
+    (e1 == false and e2 == true) then -- F/T
+        return {'boolean', true}
+    else
+        return {'boolean', false}
+    end
+end
+dispatch['XOR'] = function(node)
+    local XOR, e1, e2 = unpack(node)
+    e1 = treat_as_boolean( walk(e1) )[2]
+    e2 = treat_as_boolean( walk(e2) )[2]
+
+    if (e1 == true and e2 == false) or -- T/F
+    (e1 == false and e2 == true) then  -- F/T
+        return {'boolean', true}
+    else
+        return {'boolean', false}
+    end
+end
+
 -- exp low
 dispatch['EQU'] = function(node)
     local EQU, e1, e2 = unpack(node)

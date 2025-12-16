@@ -259,14 +259,27 @@ end
 --          | {SPECIAL} special_name
 --          | {LPAREN} LPAREN exp RPAREN
 --          | {NOT} NOT exp
-exp_lookahead = {'EQU', 'LEQ', 'NEQ', 'GEQ', 'GT', 'LT', 'PLUS', 'MINUS', 'CONCAT',
-    'MUL', 'DIV', 'INTEGER', 'STRING', 'FN_DECL', 'NAME', 'SPECIAL', 'LPAREN',
-    'NOT', 'TRUE', 'FALSE', 'NONE'}
+exp_lookahead = {'AND', 'OR', 'XOR', 'EQU', 'LEQ', 'NEQ', 'GEQ', 'GT', 'LT',
+    'PLUS', 'MINUS', 'CONCAT', 'MUL', 'DIV', 'INTEGER', 'STRING', 'FN_DECL',
+    'NAME', 'SPECIAL', 'LPAREN', 'NOT', 'TRUE', 'FALSE', 'NONE'}
 function exp(stream)
     if lib.tcontains(exp_lookahead, stream:pointer().type) then
-        return exp_low(stream)
+        return logicals(stream)
     else
         lib.err('exp: syntax error at {}',{stream:pointer().value})
+    end
+end
+function logicals(stream)
+    if lib.tcontains(exp_lookahead, stream:pointer().type) then
+        local e1 = exp_low(stream)
+        while lib.tcontains({'AND', 'OR', 'XOR'}, stream:pointer().type) do
+            local op = stream:match(stream:pointer().type)
+            local e2 = exp_low(stream)
+            e1 = {op.type, e1, e2} -- e1 (op) e2
+        end
+        return e1
+    else
+        lib.err('logicals: syntax error at {}',{stream:pointer().value})
     end
 end
 function exp_low(stream)
