@@ -222,6 +222,27 @@ function while_suffix(stream)
     return {'WHILE', e, r}
 end
 
+-- base_pair : {NAME,STRING} NAME|STRING COLON {...} exp
+function base_pair(stream)
+    local token = stream:pointer()
+
+    local pair_name
+    if lib.tcontains({'NAME'}, token.type) then
+        local tk = stream:match('NAME')
+        pair_name = {'NAME', tk.value}
+    elseif lib.tcontains({'STRING'}, token.type) then
+        local tk = stream:match('STRING')
+        pair_name = {'NAME', tostring(tk.value:sub(2, -2))}
+    else
+        lib.err('base_pair: syntax error at {}',{stream:pointer().value})
+    end
+
+    stream:match('COLON')
+    local pair_value = exp(stream)
+    
+    return {'BASE_PAIR', pair_name, pair_value}
+end
+
 -- event_res_list : {LPAREN} event_res ({COMMA} COMMA event_res)*
 -- event_res      : {LPAREN} LPAREN exp RPAREN AS decl_args stmt
 function event_res_list(stream)
@@ -251,17 +272,22 @@ end
 -- exp_low  : exp_med (({EQU,LEQ,NEQ,GEQ,GT,LT} EQU|LEQ|NEQ|GEQ|GT,LT) exp_med)*
 -- exp_med  : exp_high (({PLUS,MINUS,CONCAT} PLUS|MINUS|CONCAT) exp_high)*
 -- exp_high : primary (({MUL,DIV} MUL|DIV) primary)*
--- primary  : {INTEGER} INTEGER
---          | {TRUE,FALSE} boolean
+-- primary  : {MINUS|INTEGER} INTEGER
 --          | {NONE} NONE
+--          | {TRUE,FALSE} boolean
 --          | {STRING} STRING
+--          | {LBRACK} LBRACK ({...} exp COMMA)* RBRACK
+--          | {LCURLY} LCURLY ({...} base_pair COMMA)* RCURLY
+--          | {FN_DECL} lambda
 --          | {NAME} NAME ({LPAREN} call_args)?
 --          | {SPECIAL} special_name
 --          | {LPAREN} LPAREN exp RPAREN
 --          | {NOT} NOT exp
+--          | * (primary_suffix)?
 exp_lookahead = {'AND', 'OR', 'XOR', 'EQU', 'LEQ', 'NEQ', 'GEQ', 'GT', 'LT',
-    'PLUS', 'MINUS', 'CONCAT', 'MUL', 'DIV', 'INTEGER', 'STRING', 'FN_DECL',
-    'NAME', 'SPECIAL', 'LPAREN', 'NOT', 'TRUE', 'FALSE', 'NONE'}
+    'PLUS', 'MINUS', 'CONCAT', 'MUL', 'DIV', 'INTEGER', 'STRING', 'LBRACK',
+    'LCURLY', 'FN_DECL', 'NAME', 'SPECIAL', 'LPAREN', 'NOT', 'TRUE', 'FALSE',
+    'NONE'}
 function exp(stream)
     if lib.tcontains(exp_lookahead, stream:pointer().type) then
         return logicals(stream)
@@ -323,59 +349,134 @@ function exp_high(stream)
 end
 function primary(stream)
     local token = stream:pointer()
+    local res_value
 
     -- Integer
-    if lib.tcontains({'INTEGER'}, token.type) then
+    if lib.tcontains({'MINUS', 'INTEGER'}, token.type) then
+        local sign = 1
+        if token.type == 'MINUS' then
+            sign = -1
+            stream:match('MINUS')
+        end
         local tk = stream:match('INTEGER')
-        return {'CONST', tonumber(tk.value)}
+        res_value = {'CONST', tonumber(tk.value) * sign}
 
     -- Non-value
     elseif lib.tcontains({'NONE'}, token.type) then
         stream:match('NONE')
-        return {'NONE'}
+        res_value = {'NONE'}
         
     -- Boolean Value
     elseif lib.tcontains({'TRUE','FALSE'}, token.type) then
-        return boolean(stream)
+        res_value = boolean(stream)
 
     -- String
     elseif lib.tcontains({'STRING'}, token.type) then
         local tk = stream:match('STRING')
-        return {'CONST', tostring(tk.value:sub(2, -2))}
+        res_value = {'CONST', tostring(tk.value:sub(2, -2))}
+
+    -- List
+    elseif lib.tcontains({'LBRACK'}, token.type) then
+        stream:match('LBRACK')
+        local list_elements = {}
+        while lib.tcontains(exp_lookahead, stream:pointer().type) do
+            table.insert(list_elements, exp(stream))
+            if stream:pointer().type ~= 'RBRACK' then
+                stream:match('COMMA')
+            end
+        end
+        stream:match('RBRACK')
+        res_value = {'LIST', list_elements}
+
+    -- Base
+    elseif lib.tcontains({'LCURLY'}, token.type) then
+        stream:match('LCURLY')
+        local pair_list = {}
+        while lib.tcontains({'NAME','STRING'}, stream:pointer().type) do
+            table.insert(pair_list, base_pair(stream))
+            if stream:pointer().type ~= 'RCURLY' then
+                stream:match('COMMA')
+            end
+        end
+        stream:match('RCURLY')
+        res_value = {'BASE', pair_list}
 
     -- Lambda
     elseif lib.tcontains({'FN_DECL'}, token.type) then
-        return lambda(stream)
+        res_value = lambda(stream)
 
     -- Variable / Function
     elseif lib.tcontains({'NAME'}, token.type) then
         local n = name(stream)
         if lib.tcontains({'LPAREN'}, stream:pointer().type) then
             local c = call_args(stream)
-            return {'FN_CALL', n, c}
+            res_value = {'FN_CALL', n, c}
         else 
-            return n
+            res_value = n
         end
     
     -- Special
     elseif lib.tcontains({'SPECIAL'}, token.type) then
-        return special(stream)
+        res_value = special(stream)
 
     -- Nested Expression
     elseif lib.tcontains({'LPAREN'}, token.type) then
         stream:match('LPAREN')
         local e = exp(stream)
         stream:match('RPAREN')
-        return e
+        res_value = e
 
     -- Not Expression
     elseif lib.tcontains({'NOT'}, token.type) then
         stream:match('NOT')
-        return {'NOT', exp(stream)}
+        res_value = {'NOT', exp(stream)}
 
     else
         lib.err('primary: syntax error at {}',{stream:pointer().value})
     end
+
+    -- optional, suffix
+    if lib.tcontains(primary_suffix_lookahead, stream:pointer().type) then
+        local suffix = primary_suffix(stream)
+        suffix[2] = res_value
+        return suffix
+    end
+
+    return res_value
+end
+
+-- primary suffix : {LBRACK} LBRACK exp RBRACK
+--                | {PERIOD} PERIOD name
+--                | * (primary_suffix)?
+primary_suffix_lookahead = {'LBRACK', 'PERIOD'}
+function primary_suffix(stream)
+    local token = stream:pointer()
+    local res_value
+    -- of res_value, second value stays nil...
+
+    -- indexing...
+    if lib.tcontains({'LBRACK'}, token.type) then
+        stream:match('LBRACK')
+        local e = exp(stream)
+        stream:match('RBRACK')
+        res_value = {'INDEX', nil, e}
+    -- property...
+    elseif lib.tcontains({'PERIOD'}, token.type) then
+        stream:match('PERIOD')
+        local n = name(stream)
+        res_value = {'PROPERTY', nil, n}
+    else
+        lib.err('primary: syntax error at {}',{stream:pointer().value})
+    end
+
+    -- optional, suffix
+    if lib.tcontains(primary_suffix_lookahead, stream:pointer().type) then
+        local suffix = primary_suffix(stream)
+        suffix[2] = res_value
+        return suffix
+    end
+
+    return res_value
 end
 
 -- lambda : {FN_DECL} FN_DECL decl_args stmt (SEMI)?

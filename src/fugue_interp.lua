@@ -10,11 +10,10 @@ local lib = require('fugue_lib')
 local parse = require('fugue_fe')
 local state = require('fugue_state')
 
--- local symtab = require('fugue_symtab')
--- local fe_global = require('fugue_builtin')
 local run = require('fugue_walk')
 
 local args = {...}
+local show_ast = false
 
 function print_ast()
 
@@ -40,20 +39,27 @@ end
 function interp(input_stream)
     state:initialize()
     parse(input_stream)
-    -- print_ast()
+    if show_ast then print_ast() end
     run(state.program)
 end
 
 if args[1] then
     if fs.exists(args[1]) then
+        -- load file
         local file = fs.open(args[1], 'r')
         local contents = file.readAll()
         file.close()
+        -- show ast flag
+        if lib.tcontains(args, '--ast') then
+            show_ast = true
+        end
+        -- run interpreter
         interp(contents)
     else
         lib.err('file not found: {}', {args[1]})
     end
 else
+    -- show version
     local mem = term.getTextColor()
     term.setTextColor(colors.orange)
     print('Fugue Language')

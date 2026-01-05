@@ -24,14 +24,84 @@ function convert_to_string(v)
             return {'string', 'false'}
         end
     elseif v[1] == 'function' then
-        lib.tprint(v)
         return {'string', '<function>'}
+    elseif v[1] == 'list' then
+        return {'string', 'list<'..v[2].length..'>'}
+    elseif v[1] == 'base' then
+        return {'string', 'base<'..v[2].length..'>'}
     elseif v[1] == 'none' then
         return {'string', 'none'}
     else
         return {'string', 'unknown'}
     end
 end
+
+-------------------------------------------------------------------------
+-- complex variable types
+-------------------------------------------------------------------------
+
+List = {}
+List.__index = List
+function List.new (fe_values_table) -- { {'number', 12}, {'boolean', false} }
+    local self = setmetatable({}, List)
+    self.values = {}
+    self.length = 0
+    -- initializer?
+    if fe_values_table then
+        self.values = fe_values_table
+        self.length = #fe_values_table
+    end
+    return self
+end
+function List:index(index)
+    -- only take numbers
+    if index[1] ~= 'number' then
+        return {'none'} end
+
+    local v = index[2]
+    -- inverse
+    if v < 0 then v = self.length + v end
+    -- no overflow
+    if v > (self.length-1) then
+        return {'none'}
+    end
+    return self.values[v+1]
+end
+function List.prop__length(self)
+    return {'number', self.length}
+end
+
+Base = {}
+Base.__index = Base
+function Base.new (fe_names, fe_pairs)
+    local self = setmetatable({}, Base)
+    self.names = {}
+    self.pairs = {}
+    self.length = 0
+    if fe_names and fe_pairs then
+        self.names = fe_names
+        self.pairs = fe_pairs
+        self.length = #self.names
+    end
+    return self
+end
+function Base:index(index)
+    -- only take strings
+    if index[1] ~= 'string' then
+        return {'none'} end
+
+    if lib.tcontains(self.names, index[2]) then
+        return self.pairs[index[2]]
+    else
+        return {'none'}
+    end
+end
+function Base.prop__length(self)
+    return {'number', self.length}
+end
+
+Struct = {}
+Struct.__index = Struct
 
 -------------------------------------------------------------------------
 -- functions in lua
@@ -133,6 +203,22 @@ builtins['warn'] = function(arg_list)
     print()
 end
 
+builtins['*string:index'] = function(value, index)
+    if index[1] ~= 'number' then
+        lib.err('attempted to index string with non-number type') end
+        
+    local x = index[2]
+    -- inverse
+    if x < 0 then x = #value[2] + x end
+    -- no overflow
+    if x > (#value[2] - 1) then return {'none'} end
+
+    return {'string', string.sub(value[2], x+1, x+1)}
+end
+builtins['*string.length'] = function(value)
+    return {'number', #value[2]}
+end
+
 -------------------------------------------------------------------------
 -- initial global variables
 -------------------------------------------------------------------------
@@ -165,4 +251,5 @@ fe_defaults['black']     = {'special', {kind='color', value={'number', 0x8000}}}
 -------------------------------------------------------------------------
 
 return {builtins=builtins, defaults=fe_defaults,
-    convert_to_string=convert_to_string}
+    convert_to_string=convert_to_string,
+    complex_types={List=List,Base=Base}}

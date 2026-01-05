@@ -7,6 +7,9 @@ local symtab = require('fugue_symtab')
 local fe_global = require('fugue_builtin')
 local unpack = table.unpack
 
+-- Complex Types
+unpack(fe_global.complex_types)
+
 local dispatch = {}
 
 -------------------------------------------------------------------------
@@ -450,6 +453,27 @@ dispatch['SPECIAL'] = function(node)
     local SPECIAL, n = unpack(node)
     return symtab:lookup_sym(n, true)
 end
+dispatch['LIST'] = function(node)
+    local LIST, values = unpack(node)
+    local fe_localized = {}
+    for i,exp in ipairs(values) do
+        table.insert(fe_localized, walk(exp))
+    end
+    return {'list', List.new(fe_localized)}
+end
+dispatch['BASE'] = function(node)
+    local BASE, pairs = unpack(node)
+    local fe_names = {}
+    local fe_pairs = {}
+    for i,bpair in ipairs(pairs) do
+        local BASE_PAIR, name, exp = unpack(bpair)
+        name = name[2]
+        exp = walk(exp)
+        table.insert(fe_names, name)
+        fe_pairs[name] = exp
+    end
+    return {'base', Base.new(fe_names, fe_pairs)}
+end
 dispatch['CONST'] = function(node)
     local CONST, v = unpack(node)
     return {fe_type(v), v} -- returns value
@@ -465,6 +489,56 @@ dispatch['NOT'] = function(node)
     check[2] = not check[2]
 
     return check
+end
+
+-------------------------------------------------------------------------
+
+dispatch['INDEX'] = function(node)
+    local INDEX, value, exp = unpack(node)
+    value = walk(value)
+    exp = walk(exp)
+
+    -- complex value
+    if type(value[2]) == 'table' then
+        -- check for index function
+        if value[2].index then
+            return value[2]:index(exp)
+        else
+            lib.err('type {} can\'t be indexed', {value[1]})
+        end
+    -- simple value
+    else
+        local index_fn = fe_global.builtins['*'..value[1]..':index']
+        if index_fn then
+            return index_fn(value,exp)
+        else
+            lib.err('type {} can\'t be indexed', {value[1]})
+        end
+    end
+
+    return {'none'}
+end
+dispatch['PROPERTY'] = function(node)
+    local PROPERTY, value, propname = unpack(node)
+    value = walk(value)
+    propname = propname[2] -- {NAME, '___'}
+
+    -- complex value
+    if type(value[2]) == 'table' then
+        if type(value[2]['prop__'..propname]) == 'function' then
+            return value[2]['prop__'..propname](value[2])
+        else
+            return {'none'}
+        end
+    -- simple value
+    else
+        local prop_fn = fe_global.builtins['*'..value[1]..'.'..propname]
+        if prop_fn then
+            return prop_fn(value)
+        else
+            lib.err('unknown property of type '..value[1]..' : '..propname)
+        end
+    end
 end
 
 -------------------------------------------------------------------------

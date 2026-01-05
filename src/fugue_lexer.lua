@@ -19,10 +19,12 @@ local token_specs = {
     {'WHILE',       'while'},
     {'EVENT_LOOP',  'event%-loop'},
     {'AS',          'as'},
+    {'AS',          'as'},
     -- special characters
     {'AND',     '&'},
     {'OR',      '|'},
     {'XOR',     '!|'},
+--  {'OR_VAL',  '>|'},
     {'EQU',     '=='},
     {'LEQ',     '<='},
     {'NEQ',     '!='},
@@ -38,6 +40,9 @@ local token_specs = {
     {'RCURLY',  '}'},
     {'LPAREN',  '%('},
     {'RPAREN',  '%)'},
+    {'LBRACK',  '%['},
+    {'RBRACK',  '%]'},
+    {'PERIOD',  '%.'},
     {'COMMA',   ','},
     {'COLON',   ':'},
     {'SEMI',    ';'},
@@ -52,6 +57,8 @@ local token_specs = {
     {'STRING',     '"[^\")]*"'},
     {'STRING',     "'[^\']*'"},
     {'INTEGER',    '%d+'},
+--  {'TOML_START', 'TOML >>'},
+--  {'TOML_END',   '<<'},
     {'WHITESPACE', '[ \t\n]+'},
     {'UNKNOWN',    '.'}
 }
@@ -75,7 +82,7 @@ end
 function tokenize(code)
     tokens = {}
     for match in finditer_multi(token_specs, code) do
-        --print(string.format("'%s' at %d-%d (%s)", match.value, match.start, match.finish, match.type))
+        -- print(string.format("'%s' at %d-%d (%s)", match.value, match.start, match.finish, match.type))
         if lib.tcontains({'WHITESPACE','COMMENT'}, match.type) then -- pass
             if (match.type == 'COMMENT') then
             end
