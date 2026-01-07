@@ -29,6 +29,17 @@ end
 function SymTab:declare(sym,init)
     self.scoped_symtab[CURR_SCOPE][sym] = init
 end
+function SymTab:exists(sym)
+    local b = CURR_SCOPE
+    while b > 0 do
+        local s = self.scoped_symtab[b][sym]
+        if s then
+            return true
+        end
+        b = b - 1
+    end
+    return false
+end
 function SymTab:lookup_sym(sym, special)
     local b = CURR_SCOPE
     while b > 0 do

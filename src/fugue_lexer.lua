@@ -14,13 +14,23 @@ local token_specs = {
     {'FN_RETURN',   'res'},
     {'LOAD',        'load'},
     {'IF',          'if'},
+    {'ELSE_IF',     'elif'},
+    {'ELSE',        'else'},
+    {'WHILE',       'while'},
     {'EVENT_LOOP',  'event%-loop'},
     {'AS',          'as'},
+    {'AS',          'as'},
     -- special characters
-    {'EQU',    '=='},
-    {'LEQ',    '<='},
-    {'NEQ',    '!='},
-    {'GEQ',    '>='},
+    {'AND',     '&'},
+    {'OR',      '|'},
+    {'XOR',     '!|'},
+--  {'OR_VAL',  '>|'},
+    {'EQU',     '=='},
+    {'LEQ',     '<='},
+    {'NEQ',     '!='},
+    {'GEQ',     '>='},
+    {'GT',      '>'},
+    {'LT',      '<'},
     {'PLUS',    '%+'},
     {'MINUS',   '%-'},
     {'MUL',     '%*'},
@@ -30,6 +40,9 @@ local token_specs = {
     {'RCURLY',  '}'},
     {'LPAREN',  '%('},
     {'RPAREN',  '%)'},
+    {'LBRACK',  '%['},
+    {'RBRACK',  '%]'},
+    {'PERIOD',  '%.'},
     {'COMMA',   ','},
     {'COLON',   ':'},
     {'SEMI',    ';'},
@@ -44,7 +57,10 @@ local token_specs = {
     {'STRING',     '"[^\")]*"'},
     {'STRING',     "'[^\']*'"},
     {'INTEGER',    '%d+'},
-    {'WHITESPACE', '[ \t\n]+'},
+--  {'TOML_START', 'TOML >>'},
+--  {'TOML_END',   '<<'},
+    {'BREAKLINE', '\n'},
+    {'WHITESPACE', '[ \t]+'},
     {'UNKNOWN',    '.'}
 }
 
@@ -67,12 +83,9 @@ end
 function tokenize(code)
     tokens = {}
     for match in finditer_multi(token_specs, code) do
-        --print(string.format("'%s' at %d-%d (%s)", match.value, match.start, match.finish, match.type))
+        -- print(string.format("'%s' at %d-%d (%s)", match.value, match.start, match.finish, match.type))
         if lib.tcontains({'WHITESPACE','COMMENT'}, match.type) then -- pass
             if (match.type == 'COMMENT') then
-                -- term.setTextColor(colors.lightBlue)
-                -- print(match.value)
-                -- term.setTextColor(colors.white)
             end
         elseif match.type == 'UNKNOWN' then -- error, unknown token
             lib.err('unexpected character \'{}\'',{match.value})
@@ -96,8 +109,14 @@ function Lexer:pointer()
     return self.tokens[self.curr_token_ix]
 end
 function Lexer:next()
+    -- see end of file
     if not self.is_eof(self) then
         self.curr_token_ix = self.curr_token_ix + 1
+    end
+    -- skip breaklines...
+    if self.tokens[self.curr_token_ix].type == 'BREAKLINE' then
+        _G.fugue._DEBUG_.at_line = _G.fugue._DEBUG_.at_line + 1
+        return self.next(self)
     end
     return self.pointer(self)
 end
