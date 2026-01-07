@@ -88,11 +88,15 @@ function err(text,repl)
     term.setTextColor(colors.black)
     term.setBackgroundColor(colors.red)
     if repl then text = format(text,repl) end
-    write(text)
+    print('\187 fugue error \171')
+    if _G.fugue._DEBUG_.current_process == 'parse' then
+        print('failed parse at line '.._G.fugue._DEBUG_.at_line)
+    elseif _G.fugue._DEBUG_.current_process == 'interp' then
+        print('failed interpretation')
+    end
+    print(text)
     term.setTextColor(mem[1])
     term.setBackgroundColor(mem[2])
-    write('\n')
-
     error('',0)
 end
 

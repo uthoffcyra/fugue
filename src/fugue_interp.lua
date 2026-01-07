@@ -5,6 +5,12 @@ fugue language interpreter
 -- loads fugue's version # to global
 _G.fugue = {_VERSION_ = '0.2.0'}
 
+-- debug runtime values
+_G.fugue._DEBUG_ = {
+    current_process = 'start',
+    at_line = 1
+}
+
 local lib = require('fugue_lib')
 
 local parse = require('fugue_fe')
@@ -38,8 +44,10 @@ end
 
 function interp(input_stream)
     state:initialize()
+    _G.fugue._DEBUG_.current_process = 'parse'
     parse(input_stream)
     if show_ast then print_ast() end
+    _G.fugue._DEBUG_.current_process = 'interp'
     run(state.program)
 end
 
@@ -63,7 +71,12 @@ else
     local mem = term.getTextColor()
     term.setTextColor(colors.orange)
     print('Fugue Language')
-    term.setTextColor(colors.gray)
+    term.setTextColor(colors.lightGray)
     print('Version '.._G.fugue._VERSION_)
+
+    print('\nSource code and wiki at...')
+    term.setTextColor(colors.cyan)
+    print('github.com/uthoffcyra/fugue')
+
     term.setTextColor(mem)
 end

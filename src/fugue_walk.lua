@@ -34,6 +34,26 @@ function treat_as_boolean(v)
     end
 end
 
+-- takes an AST and finds the location where assignments can be made.
+function getMemoryLocation(node)
+    -- simple — name
+    if node[1] == 'NAME' then
+        return node[2], false
+    end
+    -- get the top-level symbol
+    local curr = node
+    local top_level_symbol
+    while curr[1] ~= 'NAME' do
+        if lib.tcontains({'PROPERTY','INDEX'},curr[1]) then
+            curr = curr[2]
+        else
+            lib.err('attempted to assign value to {}', {curr[1]})
+        end
+    end
+    top_level_symbol = curr[2]
+    return top_level_symbol, {node[1], walk(node[2]), node[3]}
+end
+
 -- creates a new scope with ...
 -- 1) argument variable names
 -- 2) argument input values
@@ -42,22 +62,28 @@ function scope_with_args(ard,arc,fb)
     -- load arguments...
     symtab:push_scope()
 
-    local i = 1
-    while true do
-        -- both decl and call
-        if ard[i] and arc[i] then
-            symtab:declare(ard[i],arc[i])
-        -- decl, no call
-        elseif ard[i] then
-            symtab:declare(ard[i],{'none'})
-        -- call, no decl
-        elseif arc[i] then
-            break
-        -- neither
-        else
-            break
+    -- take all arguments into one variable
+    if ard == true then
+        symtab:declare('*arg_list', arc)
+    -- create respective arguments
+    else
+        local i = 1
+        while true do
+            -- both decl and call
+            if ard[i] and arc[i] then
+                symtab:declare(ard[i],arc[i])
+            -- decl, no call
+            elseif ard[i] then
+                symtab:declare(ard[i],{'none'})
+            -- call, no decl
+            elseif arc[i] then
+                break
+            -- neither
+            else
+                break
+            end
+            i = i + 1
         end
-        i = i + 1
     end
 
     -- run function...
@@ -135,27 +161,21 @@ dispatch['FN_RETURN'] = function(node)
     local FN_RETURN, exp = unpack(node)
     return walk(exp)
 end
-dispatch['ASSIGN'] = function(node)
-    local ASSIGN, name, exp = unpack(node)
-    symtab:update_sym(name[2], walk(exp))
-    return
-end
 dispatch['FN_CALL'] = function(node)
-    local FN_CALL, name, arc = unpack(node)
-    name = name[2]
+    local FN_CALL, fn, arc = unpack(node)
+
+    fn = walk(fn)
     arc = walk(arc) -- see 'CALL_ARGS'
 
-    local fn = symtab:lookup_sym(name)
-
+    -- is a function
     if fn[1] == 'function' then
-        
         local ard, fb = fn[2]['arguments'], fn[2]['body']
         return scope_with_args(ard, arc, fb)
 
+    -- attempt to call non-function variable
     elseif not (fn[1] == 'none') then
         lib.err('attempted to call function of type {}', {fn[1]})
-    elseif type(fe_global.builtins[name]) == 'function' then
-        return fe_global.builtins[name](arc)
+
     else
         lib.err('attempted to call function that doesnt exist')
     end
@@ -251,6 +271,37 @@ dispatch['CALL_ARGS'] = function(node)
 end
 
 -------------------------------------------------------------------------
+
+-- assign
+dispatch['ASSIGN'] = function(node)
+    local ASSIGN, e1, e2 = unpack(node)
+    local obj
+    e1, obj = getMemoryLocation(e1)
+    e2 = walk(e2)
+    -- simple name assignment
+    if obj == false then
+        symtab:update_sym(e1, e2)
+    -- assign to property/index
+    else
+        local action, value, location = unpack(obj)
+        -- reassign at index
+        if action == 'INDEX' then
+            location = walk(location)
+            if value[2].index then
+                value[2]:index(location, e2) end
+        -- reassign at property
+        elseif action == 'PROPERTY' then
+            local propname = location[2]
+            -- specific builtin property
+            if type(value[2]['prop__'..propname]) == 'function' then
+                value[2]['prop__'..propname](value[2], e2)
+            -- variable's ANY property
+            elseif type(value[2]['prop__']) == 'function' then
+                value[2]['prop__'](value[2], propname, e2) end
+        end
+    end
+    return e2
+end
 
 -- logicals
 dispatch['AND'] = function(node)
@@ -436,6 +487,7 @@ end
 
 -------------------------------------------------------------------------
 
+-- primary
 dispatch['LAMBDA'] = function (node)
     local LAMBDA, ard, fb = unpack(node)
     ard = walk(ard) -- see 'DECL_ARGS'
@@ -493,6 +545,7 @@ end
 
 -------------------------------------------------------------------------
 
+-- primary suffix
 dispatch['INDEX'] = function(node)
     local INDEX, value, exp = unpack(node)
     value = walk(value)
@@ -525,8 +578,23 @@ dispatch['PROPERTY'] = function(node)
 
     -- complex value
     if type(value[2]) == 'table' then
+        -- return complex's property
         if type(value[2]['prop__'..propname]) == 'function' then
             return value[2]['prop__'..propname](value[2])
+        -- return complex's function
+        elseif type(value[2]['func__'..propname]) == 'function' then
+            return {'function', {arguments=true, body=
+                { 'FN_RETURN', {'RUN_LUA_FUNCTION',
+                    -- function— w/ arg_list, pass in self
+                    function(arg_list)
+                        return value[2]['func__'..propname](value[2],arg_list)
+                    end
+                } }
+            }}
+        -- return complex's ANY property
+        elseif type(value[2]['prop__']) == 'function' then
+            return value[2]['prop__'](value[2], propname, e2)
+        -- otherwise, none
         else
             return {'none'}
         end
@@ -536,9 +604,24 @@ dispatch['PROPERTY'] = function(node)
         if prop_fn then
             return prop_fn(value)
         else
-            lib.err('unknown property of type '..value[1]..' : '..propname)
+            return {'none'}
+            -- lib.err('unknown property of type '..value[1]..' : '..propname)
         end
     end
+end
+
+-------------------------------------------------------------------------
+-- builtin functions
+-------------------------------------------------------------------------
+
+dispatch['RUN_LUA_FUNCTION'] = function(node)
+    local RUN_LUA_FUNCTION, fn = unpack(node)
+    local arg_list = {}
+    -- get arguments as passthrough
+    if symtab:exists('*arg_list') then
+        arg_list = symtab:lookup_sym('*arg_list')
+    end
+    return fn(arg_list)
 end
 
 -------------------------------------------------------------------------

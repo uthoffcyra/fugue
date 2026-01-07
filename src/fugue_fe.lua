@@ -16,7 +16,8 @@ local Lexer = require('fugue_lexer').Lexer
 local args = {...}
 
 -- stmt_list : ({<see below>} stmt)*
-stmt_lookahead = {'VAR_DECL', 'FN_DECL', 'FN_RETURN', 'NAME', 'LCURLY', 'LOAD', 'IF', 'WHILE', 'EVENT_LOOP'}
+stmt_lookahead = {'VAR_DECL', 'FN_DECL', 'FN_RETURN', 'LCURLY', 
+    'LOAD', 'IF', 'WHILE', 'EVENT_LOOP'} -- + exp lookahead
 function stmt_list(stream)
     local lst = {}
     while lib.tcontains(stmt_lookahead, stream:pointer().type) do
@@ -28,12 +29,12 @@ end
 -- stmt : {VAR_DECL} VAR_DECL NAME (ASSIGN exp)? (SEMI)?
 --      | {FN_DECL} FN_DECL NAME decl_args (stmt)? (SEMI)?
 --      | {FN_RETURN} FN_RETURN ({<see exp lookahead>} exp)? (SEMI)?
---      | {NAME} NAME name_suffix (SEMI)?
 --      | {LCURLY} LCURLY stmt_list RCURLY (SEMI)?
 --      | {LOAD} LOAD exp (SEMI)?
 --      | {IF} IF if_suffix (SEMI)?
 --      | {WHILE} WHILE while_suffix (SEMI)?
 --      | {EVENT_LOOP} EVENT_LOOP COMMA event_res_list (SEMI)?
+--      | {<see exp lookahead>} exp (SEMI)?
 function stmt(stream)
     local token = stream:pointer()
 
@@ -71,12 +72,6 @@ function stmt(stream)
         stream:optional('SEMI')
         return {'FN_RETURN', e}
 
-    -- Reassign Variable / Call Function
-    elseif lib.tcontains({'NAME'}, token.type) then
-        local r = name_suffix(stream)
-        stream:optional('SEMI')
-        return r
-
     -- Grouped Statements
     elseif lib.tcontains({'LCURLY'}, token.type) then
         stream:match('LCURLY')
@@ -111,7 +106,11 @@ function stmt(stream)
         local res = event_res_list(stream)
         stream:optional('SEMI')
         return {'EVENT_LOOP', res}
-
+    -- Expressions
+    elseif lib.tcontains(exp_lookahead, token.type) then
+        local e = exp(stream)
+        stream:optional('SEMI')
+        return e
     else -- None of the above...
         lib.err('stmt: syntax error at {}',{token.value})
     end
@@ -149,23 +148,6 @@ function call_args(stream)
     end
     stream:match('RPAREN')
     return {'CALL_ARGS', argc}
-end
-
--- name_suffix : {ASSIGN} ASSIGN exp
---             | {LPAREN} LPAREN call_args RPAREN
-function name_suffix(stream)
-    local n = name(stream)
-    local token = stream:pointer()
-    if lib.tcontains({'ASSIGN'}, token.type) then
-        stream:match('ASSIGN')
-        local e = exp(stream)
-        return {'ASSIGN', n, e}
-    elseif lib.tcontains({'LPAREN'}, token.type) then
-        local c = call_args(stream)
-        return {'FN_CALL', n, c}
-    else
-        lib.err('name_suffix: syntax error at {}',{token.value})
-    end
 end
 
 -- if_suffix : {LPAREN} LPAREN exp RPAREN stmt
@@ -268,7 +250,9 @@ function event_res(stream)
     return {'EVENT_RES', e, a, s}
 end
 
--- exp      : exp_low
+-- exp      : assign
+-- assign   : logicals ({ASSIGN} ASSIGN logicals)*
+-- logicals : exp_low (({AND,OR,XOR} AND|OR|XOR) exp_low)*
 -- exp_low  : exp_med (({EQU,LEQ,NEQ,GEQ,GT,LT} EQU|LEQ|NEQ|GEQ|GT,LT) exp_med)*
 -- exp_med  : exp_high (({PLUS,MINUS,CONCAT} PLUS|MINUS|CONCAT) exp_high)*
 -- exp_high : primary (({MUL,DIV} MUL|DIV) primary)*
@@ -276,23 +260,36 @@ end
 --          | {NONE} NONE
 --          | {TRUE,FALSE} boolean
 --          | {STRING} STRING
---          | {LBRACK} LBRACK ({...} exp COMMA)* RBRACK
---          | {LCURLY} LCURLY ({...} base_pair COMMA)* RCURLY
+--          | {LBRACK} LBRACK ({<see exp lookahead>} exp COMMA)* RBRACK
+--          | {LCURLY} LCURLY ({NAME,STRING} base_pair COMMA)* RCURLY
 --          | {FN_DECL} lambda
 --          | {NAME} NAME ({LPAREN} call_args)?
---          | {SPECIAL} special_name
+--          | {SPECIAL} special
 --          | {LPAREN} LPAREN exp RPAREN
 --          | {NOT} NOT exp
 --          | * (primary_suffix)?
-exp_lookahead = {'AND', 'OR', 'XOR', 'EQU', 'LEQ', 'NEQ', 'GEQ', 'GT', 'LT',
-    'PLUS', 'MINUS', 'CONCAT', 'MUL', 'DIV', 'INTEGER', 'STRING', 'LBRACK',
+exp_lookahead = {'ASSIGN', 'AND', 'OR', 'XOR', 'EQU', 'LEQ', 'NEQ', 'GEQ', 'GT',
+    'LT', 'PLUS', 'MINUS', 'CONCAT', 'MUL', 'DIV', 'INTEGER', 'STRING', 'LBRACK',
     'LCURLY', 'FN_DECL', 'NAME', 'SPECIAL', 'LPAREN', 'NOT', 'TRUE', 'FALSE',
-    'NONE'}
+    'NONE', 'BREAKLINE'}
 function exp(stream)
     if lib.tcontains(exp_lookahead, stream:pointer().type) then
-        return logicals(stream)
+        return assign(stream)
     else
         lib.err('exp: syntax error at {}',{stream:pointer().value})
+    end
+end
+function assign(stream)
+    if lib.tcontains(exp_lookahead, stream:pointer().type) then
+        local e1 = logicals(stream)
+        while lib.tcontains({'ASSIGN'}, stream:pointer().type) do
+            local op = stream:match(stream:pointer().type)
+            local e2 = logicals(stream)
+            e1 = {op.type, e1, e2} -- e1 (op) e2
+        end
+        return e1
+    else
+        lib.err('assign: syntax error at {}',{stream:pointer().value})
     end
 end
 function logicals(stream)
@@ -405,15 +402,10 @@ function primary(stream)
     elseif lib.tcontains({'FN_DECL'}, token.type) then
         res_value = lambda(stream)
 
-    -- Variable / Function
+    -- Variable
     elseif lib.tcontains({'NAME'}, token.type) then
         local n = name(stream)
-        if lib.tcontains({'LPAREN'}, stream:pointer().type) then
-            local c = call_args(stream)
-            res_value = {'FN_CALL', n, c}
-        else 
-            res_value = n
-        end
+        res_value = n
     
     -- Special
     elseif lib.tcontains({'SPECIAL'}, token.type) then
@@ -436,10 +428,10 @@ function primary(stream)
     end
 
     -- optional, suffix
-    if lib.tcontains(primary_suffix_lookahead, stream:pointer().type) then
+    while lib.tcontains(primary_suffix_lookahead, stream:pointer().type) do
         local suffix = primary_suffix(stream)
         suffix[2] = res_value
-        return suffix
+        res_value = suffix
     end
 
     return res_value
@@ -447,8 +439,9 @@ end
 
 -- primary suffix : {LBRACK} LBRACK exp RBRACK
 --                | {PERIOD} PERIOD name
+--                | {LPAREN} call_args
 --                | * (primary_suffix)?
-primary_suffix_lookahead = {'LBRACK', 'PERIOD'}
+primary_suffix_lookahead = {'LBRACK', 'PERIOD', 'LPAREN'}
 function primary_suffix(stream)
     local token = stream:pointer()
     local res_value
@@ -459,21 +452,18 @@ function primary_suffix(stream)
         stream:match('LBRACK')
         local e = exp(stream)
         stream:match('RBRACK')
-        res_value = {'INDEX', nil, e}
+        res_value = {'INDEX', false, e}
     -- property...
     elseif lib.tcontains({'PERIOD'}, token.type) then
         stream:match('PERIOD')
         local n = name(stream)
-        res_value = {'PROPERTY', nil, n}
+        res_value = {'PROPERTY', false, n}
+    -- function call...
+    elseif lib.tcontains({'LPAREN'}, token.type) then
+        local c = call_args(stream)
+        res_value = {'FN_CALL', false, c}
     else
-        lib.err('primary: syntax error at {}',{stream:pointer().value})
-    end
-
-    -- optional, suffix
-    if lib.tcontains(primary_suffix_lookahead, stream:pointer().type) then
-        local suffix = primary_suffix(stream)
-        suffix[2] = res_value
-        return suffix
+        lib.err('primary-suffix: syntax error at {}',{stream:pointer().value})
     end
 
     return res_value
@@ -514,6 +504,9 @@ function boolean(stream)
     end
 end
 
+------------------------------------------------------------
+-- add exp_lookahead to stmt_lookahead
+for i,v in ipairs(exp_lookahead) do table.insert(stmt_lookahead, v) end
 ------------------------------------------------------------
 
 function parse(stream)

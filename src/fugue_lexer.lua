@@ -59,7 +59,8 @@ local token_specs = {
     {'INTEGER',    '%d+'},
 --  {'TOML_START', 'TOML >>'},
 --  {'TOML_END',   '<<'},
-    {'WHITESPACE', '[ \t\n]+'},
+    {'BREAKLINE', '\n'},
+    {'WHITESPACE', '[ \t]+'},
     {'UNKNOWN',    '.'}
 }
 
@@ -108,8 +109,14 @@ function Lexer:pointer()
     return self.tokens[self.curr_token_ix]
 end
 function Lexer:next()
+    -- see end of file
     if not self.is_eof(self) then
         self.curr_token_ix = self.curr_token_ix + 1
+    end
+    -- skip breaklines...
+    if self.tokens[self.curr_token_ix].type == 'BREAKLINE' then
+        _G.fugue._DEBUG_.at_line = _G.fugue._DEBUG_.at_line + 1
+        return self.next(self)
     end
     return self.pointer(self)
 end
